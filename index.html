@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PantryPal | Your Digital Recipe Box</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" type="image/png" href="favicon.png">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<!-- ══ AUTH MODAL ══ -->
+<div class="auth-overlay" id="authOverlay">
+  <div class="auth-modal">
+    <button class="auth-close" id="authClose">✕</button>
+    <p class="auth-modal-title">Welcome Back 👋</p>
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="loginTabBtn">Log In</button>
+      <button class="auth-tab" id="signupTabBtn">Sign Up</button>
+    </div>
+    <div id="loginForm">
+      <input type="email" id="loginEmail" placeholder="Email address" class="auth-input" />
+      <input type="password" id="loginPassword" placeholder="Password" class="auth-input" />
+      <button id="loginBtn" class="auth-btn">Log In</button>
+    </div>
+    <div id="signupForm" style="display:none;">
+      <input type="email" id="signupEmail" placeholder="Email address" class="auth-input" />
+      <input type="password" id="signupPassword" placeholder="Password (min 6 chars)" class="auth-input" />
+      <input type="password" id="signupConfirm" placeholder="Confirm password" class="auth-input" />
+      <button id="signupBtn" class="auth-btn auth-btn-signup">Create Account</button>
+    </div>
+    <div id="authMessage" class="auth-message"></div>
+  </div>
+</div>
+
+<!-- ══ SIDEBAR ══ -->
+<div class="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-brand">
+      <div class="sidebar-logo">🍽️</div>
+      <span class="sidebar-title">PantryPal</span>
+    </div>
+    <p class="sidebar-tagline">Discover your next favorite meal</p>
+  </div>
+
+  <div class="sidebar-auth">
+    <div id="loggedOutView">
+      <button id="openAuthBtn" class="sidebar-auth-btn">🔐 Log In / Sign Up</button>
+    </div>
+    <div id="loggedInView" style="display:none;">
+      <div class="user-badge">
+        <div class="user-avatar">👤</div>
+        <div class="user-info">
+          <div class="user-label">Signed in as</div>
+          <div id="userEmailDisplay" class="user-email"></div>
+        </div>
+      </div>
+      <button id="logoutBtn" class="sidebar-logout-btn">Sign Out</button>
+    </div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">Menu</div>
+    <div class="nav-item active" data-tab="home">
+      <div class="nav-icon">🏠</div>
+      <span>Home</span>
+    </div>
+    <div class="nav-item" data-tab="favorites">
+      <div class="nav-icon">❤️</div>
+      <span>My Favorites</span>
+    </div>
+    <div class="nav-item" data-tab="categories">
+      <div class="nav-icon">📂</div>
+      <span>Categories</span>
+    </div>
+  </nav>
+
+  <div class="sidebar-footer">
+    © 2026 PantryPal · Powered by TheMealDB
+  </div>
+</div>
+
+<!-- ══ MAIN CONTENT ══ -->
+<div class="main-content">
+
+  <!-- Top Header / Search Bar -->
+  <div class="top-header" id="mobileHeader">
+    <div class="sidebar-logo-mobile">🍽️</div>
+    <span class="app-title-mobile">PantryPal</span>
+    <div class="universal-search">
+      <input type="text" id="searchInput" placeholder="Search for any recipe..." class="search-input">
+      <button id="searchBtn" class="search-btn">
+        <span>🔍</span><span>Search</span>
+      </button>
+    </div>
+    <div class="mobile-auth-area" id="mobileAuthArea">
+        <button class="mobile-auth-btn" id="mobileAuthBtn">🔐</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- Page Title -->
+    <div class="page-header">
+      <h2 id="headerTitle">Recipe Browser</h2>
+    </div>
+
+    <!-- Back Button -->
+    <div class="back-button-container" id="backButtonContainer">
+      <button class="back-button" id="backBtn">← Back</button>
+    </div>
+
+    <!-- HOME SECTION -->
+    <div id="homeSection">
+      <div class="home-hero">
+        <div class="hero-text">
+          <div class="hero-label">✨ Daily Inspiration</div>
+          <div class="hero-title">What are you<br>cooking today?</div>
+          <div class="hero-sub">Explore hundreds of recipes from around the world</div>
+        </div>
+        <div class="hero-emoji">🍳</div>
+      </div>
+      <p class="section-title">Featured Recipes</p>
+      <div id="randomRecipesGrid" class="meals-grid"></div>
+    </div>
+
+    <!-- SEARCH SECTION -->
+    <div id="searchSection" style="display:none;">
+      <div class="meals-grid" id="mealsContainer"></div>
+    </div>
+
+    <!-- FAVORITES SECTION -->
+    <div id="favoritesSection" style="display:none;">
+      <div class="meals-grid" id="favoritesContainer"></div>
+    </div>
+
+    <!-- CATEGORIES SECTION -->
+    <div id="categoriesSection" style="display:none;">
+      <div class="category-header-controls">
+        <div class="custom-cuisine-dropdown" id="cuisineDropdown">
+          <div class="cuisine-selected" id="cuisineSelected">
+            <span>🌍 Browse by Cuisine...</span>
+            <span class="cuisine-arrow">▾</span>
+          </div>
+          <div class="cuisine-options" id="cuisineOptions"></div>
+        </div>
+      </div>
+      <p class="section-title">All Categories</p>
+      <div class="categories-grid" id="categoriesContainer"></div>
+    </div>
+
+    <!-- CATEGORY RESULTS SECTION -->
+    <div id="categoryResultsSection" style="display:none;">
+      <div class="meals-grid" id="categoryResultsContainer"></div>
+    </div>
+
+  </div><!-- .content -->
+</div><!-- .main-content -->
+
+<!-- ══ RECIPE MODAL ══ -->
+<div id="recipeModal" class="modal">
+  <div class="modal-content">
+    <button class="modal-close" id="modalCloseBtn">✕</button>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
