@@ -1,3 +1,46 @@
+// ═══════════════════════════════════════════
+// THEME TOGGLE - DARK/LIGHT MODE
+// ═══════════════════════════════════════════
+const themeToggle = document.getElementById('themeToggle');
+const html = document.documentElement;
+
+// Initialize theme from localStorage or system preference
+function initTheme() {
+  const savedTheme = localStorage.getItem('pantrypal-theme');
+  
+  if (savedTheme) {
+    html.setAttribute('data-theme', savedTheme);
+  } else {
+    // Check system preference
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const theme = prefersDark ? 'dark' : 'light';
+    html.setAttribute('data-theme', theme);
+    localStorage.setItem('pantrypal-theme', theme);
+  }
+  
+  updateThemeIcon();
+}
+
+// Update theme icon based on current theme
+function updateThemeIcon() {
+  const currentTheme = html.getAttribute('data-theme');
+  themeToggle.textContent = currentTheme === 'dark' ? '☀️' : '🌙';
+  themeToggle.title = currentTheme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode';
+}
+
+// Toggle theme
+themeToggle.addEventListener('click', () => {
+  const currentTheme = html.getAttribute('data-theme');
+  const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+  
+  html.setAttribute('data-theme', newTheme);
+  localStorage.setItem('pantrypal-theme', newTheme);
+  updateThemeIcon();
+});
+
+// Initialize theme on page load
+initTheme();
+
 // ── SUPABASE ──
 const supabaseUrl = 'https://isytoqteubkqzdezskdm.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzeXRvcXRldWJrcXpkZXpza2RtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2MjgxMjEsImV4cCI6MjA4OTIwNDEyMX0.JZ35u710c6pekokj2eeRVs2mPrXWCjmTR3iS4p8bMj0';
@@ -75,32 +118,38 @@ if (mobileAuthBtn) {
     }
   });
 }
+
 // ── THEMEALDB API ──
 async function apiCall(params) {
-  let endpoint = '';
-  if (params.type === 'detail') {
-    endpoint = `https://www.themealdb.com/api/json/v1/1/lookup.php?i=${params.id}`;
-  } else if (params.type === 'category') {
-    endpoint = `https://www.themealdb.com/api/json/v1/1/filter.php?c=${params.category}`;
-  } else if (params.type === 'search') {
-    endpoint = `https://www.themealdb.com/api/json/v1/1/search.php?s=${params.query}`;
-  } else if (params.type === 'cuisine') {
-    endpoint = `https://www.themealdb.com/api/json/v1/1/filter.php?a=${params.cuisine}`;
-  } else if (params.type === 'random') {
-    endpoint = `https://www.themealdb.com/api/json/v1/1/search.php?s=c`;
-  }
+  try {
+    let endpoint = '';
+    if (params.type === 'detail') {
+      endpoint = `https://www.themealdb.com/api/json/v1/1/lookup.php?i=${params.id}`;
+    } else if (params.type === 'category') {
+      endpoint = `https://www.themealdb.com/api/json/v1/1/filter.php?c=${params.category}`;
+    } else if (params.type === 'search') {
+      endpoint = `https://www.themealdb.com/api/json/v1/1/search.php?s=${params.query}`;
+    } else if (params.type === 'cuisine') {
+      endpoint = `https://www.themealdb.com/api/json/v1/1/filter.php?a=${params.cuisine}`;
+    } else if (params.type === 'random') {
+      endpoint = `https://www.themealdb.com/api/json/v1/1/search.php?s=c`;
+    }
 
-  const res = await fetch(endpoint);
-  if (!res.ok) throw new Error('Failed to fetch from TheMealDB');
-  const data = await res.json();
-  const meals = data.meals || [];
+    const res = await fetch(endpoint);
+    if (!res.ok) throw new Error(`API Error: ${res.status}`);
+    const data = await res.json();
+    const meals = data.meals || [];
 
-  if (params.type === 'detail') {
-    if (!meals[0]) throw new Error('Recipe details not found');
-    return formatMealDBRecipe(meals[0]);
-  } else {
-    const formattedRecipes = meals.map(formatMealDBRecipe);
-    return { recipes: formattedRecipes, results: formattedRecipes };
+    if (params.type === 'detail') {
+      if (!meals[0]) throw new Error('Recipe details not found');
+      return formatMealDBRecipe(meals[0]);
+    } else {
+      const formattedRecipes = meals.map(formatMealDBRecipe);
+      return { recipes: formattedRecipes, results: formattedRecipes };
+    }
+  } catch (error) {
+    console.error('API Call Error:', error);
+    throw error;
   }
 }
 
@@ -267,7 +316,8 @@ async function loadRandomRecipes() {
     const data = await apiCall({ type: 'random' });
     displayMeals(data.recipes || [], randomRecipesGrid);
   } catch (err) {
-    randomRecipesGrid.innerHTML = emptyState('❌', 'Something went wrong', err.message);
+    console.error('Random Recipes Error:', err);
+    randomRecipesGrid.innerHTML = emptyState('❌', 'Failed to load recipes', err.message || 'Please try again');
   }
 }
 
@@ -288,13 +338,41 @@ async function loadCategoryMeals(category, name) {
   document.getElementById('categoryResultsSection').style.display = 'block';
   headerTitle.textContent = name + ' Recipes';
   categoryResultsContainer.innerHTML = `<div class="loading" style="grid-column:1/-1">Loading...</div>`;
+  
   try {
     const data = await apiCall({ type: 'category', category });
     displayMeals(data.results || [], categoryResultsContainer);
   } catch (err) {
-    categoryResultsContainer.innerHTML = emptyState('❌', 'Something went wrong', err.message);
+    console.error('Category Load Error:', err);
+    categoryResultsContainer.innerHTML = emptyState('❌', 'Failed to load recipes', err.message || 'Please try again');
   }
 }
+
+// ── FLOATING SEARCH ──
+const floatingSearchIcon = document.getElementById('floatingSearchIcon');
+const floatingSearchPanel = document.getElementById('floatingSearchPanel');
+const floatingSearchContainer = document.getElementById('floatingSearchContainer');
+
+floatingSearchIcon.addEventListener('click', () => {
+  floatingSearchPanel.classList.toggle('active');
+  if (floatingSearchPanel.classList.contains('active')) {
+    searchInput.focus();
+  }
+});
+
+// Close search panel when clicking outside
+document.addEventListener('click', (e) => {
+  if (!floatingSearchContainer.contains(e.target)) {
+    floatingSearchPanel.classList.remove('active');
+  }
+});
+
+// Close search panel on Escape key
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    floatingSearchPanel.classList.remove('active');
+  }
+});
 
 // ── UNIVERSAL SEARCH ──
 searchBtn.addEventListener('click', searchMeals);
@@ -302,12 +380,18 @@ searchInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') searchM
 
 async function searchMeals() {
   const query = searchInput.value.trim();
-  if (!query) return;
+  if (!query) {
+    showAuthMsg('⚠️ Please enter a search term', 'error');
+    return;
+  }
+  
+  floatingSearchPanel.classList.remove('active');
   document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
   switchTab('search');
   backButtonContainer.style.display = 'block';
   mealsContainer.innerHTML = `<div class="loading" style="grid-column:1/-1">Searching...</div>`;
   headerTitle.textContent = `Results for "${query}"`;
+  
   try {
     const data = await apiCall({ type: 'search', query });
     if (data.results && data.results.length > 0) {
@@ -316,7 +400,8 @@ async function searchMeals() {
       mealsContainer.innerHTML = emptyState('🔍', 'No results found', `We couldn't find anything for "${query}"`);
     }
   } catch (err) {
-    mealsContainer.innerHTML = emptyState('❌', 'Something went wrong', err.message);
+    console.error('Search Error:', err);
+    mealsContainer.innerHTML = emptyState('❌', 'Search failed', err.message || 'Please try again');
   }
 }
 
@@ -337,8 +422,11 @@ function displayMeals(meals, container) {
         </button>
       </div>
       <div class="meal-info">
-        <div class="meal-name">${meal.title}</div>
-        ${meal.readyInMinutes ? `<div class="meal-meta"><span class="meta-pill">⏱️ ${meal.readyInMinutes}m</span><span class="meta-pill">🍽️ ${meal.servings}</span></div>` : ''}
+        <div class="meal-title">${meal.title}</div>
+        <div class="meal-actions">
+          <button class="meal-btn meal-btn-view">View Recipe</button>
+          </button>
+        </div>
       </div>
     </div>
   `).join('');
@@ -360,13 +448,12 @@ async function viewRecipe(id) {
       </div>
     `).join('');
 
-    // Updated step logic for your CSS .step-num and .step-text classes
     const instructions = recipe.analyzedInstructions?.[0]?.steps?.map((step, i) => `
       <div class="instruction-step">
         <div class="step-num">${i + 1}</div>
         <div class="step-text">${step.step}</div>
       </div>
-    `).join('') || '<p style="color:var(--text-muted); padding: 20px;">No instructions available.</p>';
+    `).join('') || '<p style="color:var(--text-tertiary); padding: 20px;">No instructions available.</p>';
 
     const metaChips = [
       recipe.readyInMinutes ? `<div class="recipe-meta-chip"><span>⏱️</span> ${recipe.readyInMinutes}m</div>` : '',
@@ -408,7 +495,8 @@ async function viewRecipe(id) {
       </div>
     `;
   } catch (err) {
-    modalBody.innerHTML = `<div class="empty-state"><span class="empty-state-icon">❌</span><div class="empty-state-text">${err.message}</div></div>`;
+    console.error('Recipe Load Error:', err);
+    modalBody.innerHTML = `<div class="empty-state"><span class="empty-state-icon">❌</span><div class="empty-state-text">${err.message || 'Failed to load recipe'}</div></div>`;
   }
 }
 
@@ -462,21 +550,35 @@ async function toggleFavorite(recipeId, title, imageUrl, btn) {
     showAuthMsg('⚠️ Please log in to save recipes.', 'error');
     return;
   }
-  if (isSaved(recipeId)) {
-    const { error } = await db.from('saved_recipes').delete().match({ user_id: currentUser.id, recipe_id: recipeId });
-    if (!error) {
+  
+  try {
+    if (isSaved(recipeId)) {
+      const { error } = await db.from('saved_recipes').delete().match({ user_id: currentUser.id, recipe_id: recipeId });
+      if (error) throw error;
+      
       savedRecipesCache = savedRecipesCache.filter(r => r.recipe_id != recipeId);
-      if (btn) { btn.classList.remove('active'); btn.textContent = btn.textContent.includes('Saved') ? '🤍 Save to Favorites' : '🤍'; }
+      if (btn) { 
+        btn.classList.remove('active'); 
+        btn.textContent = btn.textContent.includes('Saved') ? '🤍 Save to Favorites' : '🤍'; 
+      }
+    } else {
+      const { data, error } = await db.from('saved_recipes')
+        .insert([{ user_id: currentUser.id, recipe_id: recipeId, title, image_url: imageUrl }]).select();
+      if (error) throw error;
+      
+      if (data) {
+        savedRecipesCache.push(data[0]);
+        if (btn) { 
+          btn.classList.add('active'); 
+          btn.textContent = btn.textContent.includes('Save') ? '❤️ Saved to Favorites' : '❤️'; 
+        }
+      }
     }
-  } else {
-    const { data, error } = await db.from('saved_recipes')
-      .insert([{ user_id: currentUser.id, recipe_id: recipeId, title, image_url: imageUrl }]).select();
-    if (!error && data) {
-      savedRecipesCache.push(data[0]);
-      if (btn) { btn.classList.add('active'); btn.textContent = btn.textContent.includes('Save') ? '❤️ Saved to Favorites' : '❤️'; }
-    }
+    if (currentView === 'favorites') renderFavorites();
+  } catch (error) {
+    console.error('Favorite Toggle Error:', error);
+    showAuthMsg('❌ Failed to update favorite', 'error');
   }
-  if (currentView === 'favorites') renderFavorites();
 }
 
 async function loadFavoritesFromDB() {
@@ -552,7 +654,8 @@ if (cuisineDropdown && cuisineSelected && cuisineOptions) {
       const data = await apiCall({ type: 'cuisine', cuisine });
       displayMeals(data.results || [], categoryResultsContainer);
     } catch (err) {
-      categoryResultsContainer.innerHTML = emptyState('❌', 'Something went wrong', err.message);
+      console.error('Cuisine Load Error:', err);
+      categoryResultsContainer.innerHTML = emptyState('❌', 'Failed to load recipes', err.message || 'Please try again');
     }
   });
 }

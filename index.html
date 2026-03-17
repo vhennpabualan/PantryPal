@@ -87,26 +87,25 @@
 <!-- ══ MAIN CONTENT ══ -->
 <div class="main-content">
 
-  <!-- Top Header / Search Bar -->
-  <div class="top-header" id="mobileHeader">
-    <div class="sidebar-logo-mobile">🍽️</div>
-    <span class="app-title-mobile">PantryPal</span>
-    <div class="universal-search">
+  <!-- Floating Search Bar -->
+  <div class="floating-search-container" id="floatingSearchContainer">
+    <button class="floating-search-icon" id="floatingSearchIcon" title="Search recipes">
+      🔍
+    </button>
+    <div class="floating-search-panel" id="floatingSearchPanel">
       <input type="text" id="searchInput" placeholder="Search for any recipe..." class="search-input">
       <button id="searchBtn" class="search-btn">
-        <span>🔍</span><span>Search</span>
+        <span>Search</span>
       </button>
-    </div>
-    <div class="mobile-auth-area" id="mobileAuthArea">
-        <button class="mobile-auth-btn" id="mobileAuthBtn">🔐</button>
     </div>
   </div>
 
   <div class="content">
 
-    <!-- Page Title -->
+    <!-- Page Title with Theme Toggle -->
     <div class="page-header">
       <h2 id="headerTitle">Recipe Browser</h2>
+      <button class="theme-toggle" id="themeToggle" title="Toggle Dark Mode">🌙</button>
     </div>
 
     <!-- Back Button -->
